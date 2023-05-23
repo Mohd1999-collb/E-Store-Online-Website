@@ -21,13 +21,13 @@ public class Seller {
 
     String name;
 
-    /*Established parent-child relationship */
-
     @Column(unique = true, nullable = false)
     String mobNo;
 
     @Column(unique = true, nullable = false)
     String emailId;
+
+    /*Established parent-child relationship */
 
     @OneToMany(mappedBy = "seller", cascade = CascadeType.ALL)
     List<Product> products = new ArrayList<>();
