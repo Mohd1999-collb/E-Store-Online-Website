@@ -1,6 +1,5 @@
 package com.example.EStore.Dto.RequestDto;
 
-import com.example.EStore.Enum.Gender;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -9,12 +8,10 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Builder
-public class CustomerRequestDto {
-    String name;
+public class ItemRequestDto {
+    int requiredQuantity;
 
-    String mobNo;
+    String customerEmailId;
 
-    String emailId;
-
-    Gender gender;
+    int productId;
 }

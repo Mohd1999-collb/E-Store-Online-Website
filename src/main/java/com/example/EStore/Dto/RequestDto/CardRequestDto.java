@@ -1,20 +1,25 @@
 package com.example.EStore.Dto.RequestDto;
 
-import com.example.EStore.Enum.Gender;
+import com.example.EStore.Enum.CardType;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+
+import java.sql.Date;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Builder
-public class CustomerRequestDto {
-    String name;
+public class CardRequestDto {
 
-    String mobNo;
+    String customerEmailId;
 
-    String emailId;
+    String cardNo;
 
-    Gender gender;
+    CardType cardType;
+
+    int cvv;
+
+    Date validTill;
 }
