@@ -1,7 +1,9 @@
 package com.example.EStore.Controller;
 
+import com.example.EStore.Dto.RequestDto.CheckOutCartRequestDto;
 import com.example.EStore.Dto.RequestDto.ItemRequestDto;
 import com.example.EStore.Dto.ResponseDto.CartResponseDto;
+import com.example.EStore.Dto.ResponseDto.OrderResponseDto;
 import com.example.EStore.Model.Item;
 import com.example.EStore.Service.CartService;
 import com.example.EStore.Service.ItemService;
@@ -29,6 +31,17 @@ public class CartController {
             /*Add created item to cart*/
             CartResponseDto cartResponseDto = cartService.addToCart(item, itemRequestDto);
             return new ResponseEntity<>(cartResponseDto, HttpStatus.ACCEPTED);
+        }catch (Exception e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    /*Check out the item from the cart*/
+    @PostMapping("/checkout-cart")
+    public ResponseEntity<Object> checkOutCart(@RequestBody CheckOutCartRequestDto checkOutCartRequestDto){
+        try {
+            OrderResponseDto orderResponseDto = cartService.checkOutCart(checkOutCartRequestDto);
+            return new ResponseEntity<>(orderResponseDto, HttpStatus.CREATED);
         }catch (Exception e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }

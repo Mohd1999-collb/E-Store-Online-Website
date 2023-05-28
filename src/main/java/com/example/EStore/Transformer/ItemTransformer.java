@@ -5,9 +5,9 @@ import com.example.EStore.Dto.ResponseDto.ItemResponseDto;
 import com.example.EStore.Model.Item;
 
 public class ItemTransformer {
-    public static Item ItemRequestDtoToItem(ItemRequestDto itemRequestDto){
+    public static Item ItemRequestDtoToItem(int quantity){
         return Item.builder()
-                .requiredQuantity(itemRequestDto.getRequiredQuantity())
+                .requiredQuantity(quantity)
                 .build();
     }
 

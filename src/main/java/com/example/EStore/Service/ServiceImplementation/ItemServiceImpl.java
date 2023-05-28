@@ -54,6 +54,6 @@ public class ItemServiceImpl implements ItemService {
         }
 
         /*Dto --> Item(entity)*/
-        return ItemTransformer.ItemRequestDtoToItem(itemRequestDto);
+        return ItemTransformer.ItemRequestDtoToItem(itemRequestDto.getRequiredQuantity());
     }
 }

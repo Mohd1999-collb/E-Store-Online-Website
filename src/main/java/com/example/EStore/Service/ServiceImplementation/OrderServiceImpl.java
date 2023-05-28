@@ -1,0 +1,163 @@
+package com.example.EStore.Service.ServiceImplementation;
+
+import com.example.EStore.Dto.RequestDto.OrderRequestDto;
+import com.example.EStore.Dto.ResponseDto.OrderResponseDto;
+import com.example.EStore.Enum.ProductStatus;
+import com.example.EStore.Exception.*;
+import com.example.EStore.Model.*;
+import com.example.EStore.Repository.CardRepository;
+import com.example.EStore.Repository.CustomerRepository;
+import com.example.EStore.Repository.OrderRepository;
+import com.example.EStore.Repository.ProductRepository;
+import com.example.EStore.Service.OrderService;
+import com.example.EStore.Transformer.ItemTransformer;
+import com.example.EStore.Transformer.OrderTransformer;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Service;
+
+import java.util.Date;
+import java.util.Optional;
+import java.util.UUID;
+
+@Service
+public class OrderServiceImpl implements OrderService {
+
+    @Autowired
+    CustomerRepository customerRepository;
+
+    @Autowired
+    ProductRepository productRepository;
+
+    @Autowired
+    CardRepository cardRepository;
+
+    @Autowired
+    OrderRepository orderRepository;
+
+    @Autowired
+    private JavaMailSender emailSender;
+
+    @Override
+    public OrderResponseDto placeOrder(OrderRequestDto orderRequestDto) throws
+            CustomerNotFoundException,
+            ProductNotFoundException, InsufficientQuantityException,
+            InvalidQuantityException, InvalidCardException {
+        /*Check customer exist or not.*/
+        Customer customer = customerRepository.findByEmailId(orderRequestDto.getCustomerEmailId());
+        if (customer == null){
+            throw new CustomerNotFoundException("Customer does not exist.");
+        }
+
+        /*Check product exist or not.*/
+        Optional<Product> productOpt = productRepository.findById(orderRequestDto.getProductId());
+        if (productOpt.isEmpty()){
+            throw  new ProductNotFoundException("Product does not exist.");
+        }
+
+        Product product = productOpt.get();
+
+        /*Check product quantity exist or not.*/
+        if (orderRequestDto.getRequiredQuantity() <= 0){
+            throw new InvalidQuantityException("Please enter the valid quantity.");
+        }
+        if (product.getQuantity() < orderRequestDto.getRequiredQuantity()){
+            throw new InsufficientQuantityException("Sorry! The required quantity is not available.");
+        }
+
+        /*Check customer card exist or not*/
+        Card card = cardRepository.findByCardNo(orderRequestDto.getCardNo());
+        Date currDate = new Date();
+        if (card == null || card.getCvv() != orderRequestDto.getCvv() || currDate.after(card.getValidTill())){
+            throw new InvalidCardException("Sorry! You can not use this card.");
+        }
+
+        /*Decrease the product quantity*/
+        int newQuantity = product.getQuantity() - orderRequestDto.getRequiredQuantity();
+        if (newQuantity == 0){
+            product.setProductStatus(ProductStatus.OUT_OF_STOCK);
+        }
+        product.setQuantity(newQuantity); // Set the new quantity of product
+
+        /*Create item*/
+        Item item = ItemTransformer.ItemRequestDtoToItem(orderRequestDto.getRequiredQuantity());
+        item.setProduct(product);
+
+        /*Create the order*/
+        OrderEntity orderEntity = OrderTransformer.OrderRequestDtoToOrderEntity(item, customer);
+
+        /*Generate the masked card number like XXXXXXXXXX7865*/
+        String maskedCard = generateMaskedCardNo(card);
+        orderEntity.setCardUsed(maskedCard);
+        orderEntity.getItems().add(item); // Update the item list
+        item.setOrderEntity(orderEntity);
+
+        OrderEntity savedOrder = orderRepository.save(orderEntity); // Saved order and item both
+        customer.getOrderEntity().add(savedOrder); // Update the order list
+
+        /*Only Order one item*/
+        product.getItems().add(savedOrder.getItems().get(0));
+
+        /*Send mail*/
+        String text = "Congrats!! \n" + customer.getName() + " your order number " + orderEntity.getOrderNo() +
+                " has been ordered successfully. \n" +
+//                "Product name : " + item.getProduct() + "\n" +
+//                "Product price : " + product.getPrice() + "\n" +
+                "Thank you!!!" + "\n" + "no-reply this is automated generated mail.";
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("ecommerce7232@gmail.com");
+        message.setTo(customer.getEmailId());
+        message.setSubject("Order Booked!!!");
+        message.setText(text);
+        emailSender.send(message);
+
+        /*Order(entity) --> Dto*/
+        return OrderTransformer.OrderToOrderResponseDto(savedOrder);
+    }
+
+    @Override
+    public OrderEntity placeOrder(Card card, Cart cart) throws
+            InsufficientQuantityException{
+        OrderEntity orderEntity = new OrderEntity();
+        orderEntity.setCardUsed(generateMaskedCardNo(card));
+        orderEntity.setOrderNo(String.valueOf(UUID.randomUUID()));
+
+        int totalValue = 0;
+        for (Item item : cart.getItems()) {
+            Product product = item.getProduct();
+
+            /*Check product quantity exist or not*/
+            if (item.getRequiredQuantity() > product.getQuantity()){
+                throw new InsufficientQuantityException("Sorry! The required quantity is not available.");
+            }
+
+            /*Set the total value*/
+            totalValue += item.getRequiredQuantity() * product.getPrice();
+            int newQuantity = product.getQuantity() - item.getRequiredQuantity();
+            product.setQuantity(newQuantity); // Set the new quantity of product
+            if (newQuantity == 0){
+                product.setProductStatus(ProductStatus.OUT_OF_STOCK);
+            }
+            /* Update the order entity to corresponding item */
+            item.setOrderEntity(orderEntity);
+        }
+
+        orderEntity.setTotalValue(totalValue);
+        orderEntity.setItems(cart.getItems()); // Update the item list
+        orderEntity.setCustomer(cart.getCustomer());
+        return orderEntity;
+    }
+
+    private String generateMaskedCardNo(Card card) {
+        String originalCardNo = card.getCardNo();
+        String cardNo = "";
+        for (int i = 0; i < originalCardNo.length()-4; i++) {
+            cardNo += "X";
+        }
+
+        cardNo += originalCardNo.substring(originalCardNo.length()-4);
+        return cardNo;
+    }
+}

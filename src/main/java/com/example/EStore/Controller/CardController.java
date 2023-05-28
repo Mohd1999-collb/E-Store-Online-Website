@@ -27,7 +27,6 @@ public class CardController {
             return new ResponseEntity<>(cardResponseDto, HttpStatus.CREATED);
         }catch(CustomerNotFoundException e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
-
         }
     }
 }
