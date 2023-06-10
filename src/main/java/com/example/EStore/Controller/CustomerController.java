@@ -2,14 +2,14 @@ package com.example.EStore.Controller;
 
 import com.example.EStore.Dto.RequestDto.CustomerRequestDto;
 import com.example.EStore.Dto.ResponseDto.CustomerResponseDto;
+import com.example.EStore.Model.Customer;
 import com.example.EStore.Service.CustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/customer")
@@ -18,15 +18,32 @@ public class CustomerController {
     @Autowired
     CustomerService customerService;
 
+    /*Add customer*/
     @PostMapping("/add-customer")
     public ResponseEntity<CustomerResponseDto> addCustomer(@RequestBody CustomerRequestDto customerRequestDto){
         CustomerResponseDto customerResponseDto = customerService.addCustomer(customerRequestDto);
         return new ResponseEntity<>(customerResponseDto, HttpStatus.CREATED);
     }
 
-    // get all female customers between age 20-30
+    /* Get all female customers */
+    @GetMapping("/all-female-customer")
+    public ResponseEntity<List<String>> allFemaleCustomer(){
+        List<String> customerList = customerService.allFemaleCustomer();
+        return new ResponseEntity<>(customerList, HttpStatus.FOUND);
 
-    // get all male customers less than 45
+    }
 
-    // customers who have ordered atleast 'k' orders
+    /* Get all male customers less than 45 */
+    @GetMapping("/all-male-customer")
+    public ResponseEntity<List<String>> allMaleCustomer(){
+        List<String> customerList = customerService.allMaleCustomer();
+        return new ResponseEntity<>(customerList, HttpStatus.FOUND);
+    }
+
+    /* Customers who have ordered at least 'k' orders */
+    @GetMapping("/customer-at-least-k-orders")
+    public ResponseEntity<List<String>> customerAtLeastKOrders(@RequestParam Integer k){
+        List<String> customerList = customerService.customerAtLeastKOrders(k);
+        return new ResponseEntity<>(customerList, HttpStatus.FOUND);
+    }
 }

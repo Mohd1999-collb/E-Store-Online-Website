@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/product")
@@ -35,17 +36,52 @@ public class ProductController {
         return new ResponseEntity<>(productResponseDto, HttpStatus.FOUND);
     }
 
-    // get all the products of a category
+    /* Get all the products in a category who have price greater than 500 */
+    @GetMapping("/product-price-greater-than-500")
+    public ResponseEntity<Set<String>> productPriceGreaterThan500(){
+        Set<String> list = productService.productPriceGreaterThan500();
+        return new ResponseEntity<>(list, HttpStatus.FOUND);
+    }
 
-    // get all the products in a category who have price greater than 500
+    /* Get top 5 costliest products in a category */
+    @GetMapping("/top-5-costliest-product")
+    public ResponseEntity<List<String>> top5CostliestProduct(){
+        List<String> list = productService.top5CostliestProduct();
+        return new ResponseEntity<>(list, HttpStatus.FOUND);
+    }
 
-    // get the top 5 cheapest products in a category
+    /* Get the top 5 cheapest products in a category */
+    @GetMapping("/top-5-cheapest-product")
+    public ResponseEntity<List<String>> top5CheapestProduct(){
+        List<String> list = productService.top5CheapestProduct();
+        return new ResponseEntity<>(list, HttpStatus.FOUND);
+    }
 
-    // get top 5 costliest products in a category
+    /* Get all the products of seller based on email id */
+    @GetMapping("/product-based-on-seller-emailId")
+    public ResponseEntity<Set<String>> productBasedOnSellerEmailId(@RequestParam String emailId){
+        Set<String> productSet = productService.productBasedOnSellerEmailId(emailId);
+        return new ResponseEntity<>(productSet, HttpStatus.FOUND);
+    }
 
-    // get all the products of seller based on emailid
+    /* Get all the out-of-stock products for a particular category */
+    @GetMapping("/out-of-stock-products-for-a-particular-category/{category}")
+    public ResponseEntity<Set<String>> outOfStockProductForAParticularCategory(@PathVariable Category category){
+        Set<String> list = productService.outOfStockProductForAParticularCategory(category);
+        return new ResponseEntity<>(list, HttpStatus.FOUND);
+    }
 
-    // get all the out of stock products for a particular catgeory
+    /* Send an email to the seller of the product if the product is out of stock. */
+    @GetMapping("/send-email-to-seller-product-out-of-stock")
+    public ResponseEntity<String> sendEmailToSellerProductOutOfStock(){
+        productService.sendEmailToSellerProductOutOfStock();
+        return new ResponseEntity<>("Email send to the seller successfully.", HttpStatus.FOUND);
+    }
 
-    // send an email to the seller of the product if the product is out os stock.
+    /*Delete product*/
+    @DeleteMapping("/delete-product")
+    public ResponseEntity<String> deleteProduct(@RequestParam int id){
+        productService.deleteProduct(id);
+        return new ResponseEntity<>("Product deleted successfully.", HttpStatus.OK);
+    }
 }

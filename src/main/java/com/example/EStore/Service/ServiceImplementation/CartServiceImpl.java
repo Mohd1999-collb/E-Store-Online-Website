@@ -41,6 +41,9 @@ public class CartServiceImpl implements CartService {
     @Autowired
     OrderRepository orderRepository;
 
+    @Autowired
+    OrderServiceImpl orderService1;
+
     @Override
     public CartResponseDto addToCart(Item item, ItemRequestDto itemRequestDto) {
         Customer customer = customerRepository.findByEmailId(itemRequestDto.getCustomerEmailId());
@@ -74,7 +77,8 @@ public class CartServiceImpl implements CartService {
         /*Check customer card exist or not*/
         Card card = cardRepository.findByCardNo(checkOutCartRequestDto.getCardNo());
         Date currDate = new Date();
-        if (card == null || card.getCvv() != checkOutCartRequestDto.getCvv() || currDate.after(card.getValidTill())){
+        if (card == null || card.getCvv() != checkOutCartRequestDto.getCvv() ||
+                currDate.after(card.getValidTill()) || card.getCustomer().getId() != customer.getId()){
             throw new InvalidCardException("Sorry! You can not use this card.");
         }
 
@@ -84,16 +88,32 @@ public class CartServiceImpl implements CartService {
             throw new EmptyCartException("Cart is empty!");
         }
 
-        /*Prepare the order entity*/
+        /*Prepare the order entity*/;
         try {
             OrderEntity order = orderService.placeOrder(card, cart);
+            resetCart(cart);
             OrderEntity savedOrder = orderRepository.save(order);
             customer.getOrderEntity().add(savedOrder); // Update the order list
-            resetCart(cart);
+
+            /*Call to sendToCustomerMail method*/
+            sendToCustomerMail(savedOrder);
             return OrderTransformer.OrderToOrderResponseDto(savedOrder);
         }catch (InsufficientQuantityException e){
             throw e;
         }
+    }
+
+    private void sendToCustomerMail(OrderEntity savedOrder) {
+        /*Send mail*/
+        String date = savedOrder.getDateOfOrder().toString().substring(0, 19);
+        String text = "\tE-Store Online E-Commerce Website \n\n" +
+                "Congrats!! \n" + savedOrder.getCustomer().getName() + " your order number " + savedOrder.getOrderNo() +
+                " has been ordered successfully. \n\n" +
+                "Total price : " + savedOrder.getTotalValue() + "\n" +
+                "Order Date  : " + date + "\n\n" +
+                "Thank you!!!" + "\n\n" + "no-reply this is automated generated mail.";
+        // Call to mail sendMailToCustomer method
+        orderService1.sendMailToCustomer(text, savedOrder.getCustomer().getEmailId());
     }
 
     private void resetCart(Cart cart) {

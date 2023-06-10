@@ -6,10 +6,10 @@ import com.example.EStore.Service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Collections;
+import java.util.List;
 
 @RestController
 @RequestMapping("/order")
@@ -28,11 +28,25 @@ public class OrderController {
         }
     }
 
-    // get top 5 orders with the highest order value
+    /* Get top 5 orders with the highest order value */
+    @GetMapping("/top-5-orders-with-highest-order-value")
+    public ResponseEntity<List<Integer>> top5OrdersWithHighestOrderValue(){
+        List<Integer> list = orderService.top5OrdersWithHighestOrderValue();
+        return new ResponseEntity<>(list, HttpStatus.FOUND);
+    }
 
-    // all the orders of a particular customer
+    /* All the orders of a particular customer */
+    @GetMapping("/all-order-of-particular-customer/{emailId}")
+    public ResponseEntity<List<Integer>> allOrderOfParticularCustomer(@PathVariable String emailId){
+        List<Integer> list = orderService.allOrderOfParticularCustomer(emailId);
+        return new ResponseEntity<>(list, HttpStatus.FOUND);
+    }
 
-    // top 5 orders of a customer based on cost
-
-    // top 5 recently ordered orders of a customer
+    /* Top 5 recently ordered orders of a customer */
+    @GetMapping("/top-5-recently-orders")
+    public ResponseEntity<List<Integer>> top5RecentlyOrders(){
+        List<Integer> list = orderService.top5RecentlyOrders();
+        Collections.reverse(list);
+        return new ResponseEntity<>(list, HttpStatus.FOUND);
+    }
 }

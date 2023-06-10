@@ -17,9 +17,7 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -69,7 +67,8 @@ public class OrderServiceImpl implements OrderService {
         /*Check customer card exist or not*/
         Card card = cardRepository.findByCardNo(orderRequestDto.getCardNo());
         Date currDate = new Date();
-        if (card == null || card.getCvv() != orderRequestDto.getCvv() || currDate.after(card.getValidTill())){
+        if (card == null || card.getCvv() != orderRequestDto.getCvv() ||
+                currDate.after(card.getValidTill()) || card.getCustomer().getId() != customer.getId()){
             throw new InvalidCardException("Sorry! You can not use this card.");
         }
 
@@ -100,18 +99,16 @@ public class OrderServiceImpl implements OrderService {
         product.getItems().add(savedOrder.getItems().get(0));
 
         /*Send mail*/
-        String text = "Congrats!! \n" + customer.getName() + " your order number " + orderEntity.getOrderNo() +
-                " has been ordered successfully. \n" +
-//                "Product name : " + item.getProduct() + "\n" +
-//                "Product price : " + product.getPrice() + "\n" +
-                "Thank you!!!" + "\n" + "no-reply this is automated generated mail.";
+        String date = savedOrder.getDateOfOrder().toString().substring(0, 19);
+        String text = "\tE-Store Online E-Commerce Website \n\n" +
+                "Congrats!! \n" + customer.getName() + " your order number " + orderEntity.getOrderNo() +
+                " has been ordered successfully. \n\n" +
+                "Product name  : " + product.getName() + "\n" +
+                "Product price : " + product.getPrice() + "\n" +
+                "Order Date    : " + date + "\n\n" +
+                "Thank you!!!" + "\n\n" + "no-reply this is automated generated mail.";
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom("ecommerce7232@gmail.com");
-        message.setTo(customer.getEmailId());
-        message.setSubject("Order Booked!!!");
-        message.setText(text);
-        emailSender.send(message);
+        sendMailToCustomer(text, customer.getEmailId()); // Call to mail sendMailToCustomer method
 
         /*Order(entity) --> Dto*/
         return OrderTransformer.OrderToOrderResponseDto(savedOrder);
@@ -127,7 +124,6 @@ public class OrderServiceImpl implements OrderService {
         int totalValue = 0;
         for (Item item : cart.getItems()) {
             Product product = item.getProduct();
-
             /*Check product quantity exist or not*/
             if (item.getRequiredQuantity() > product.getQuantity()){
                 throw new InsufficientQuantityException("Sorry! The required quantity is not available.");
@@ -140,6 +136,7 @@ public class OrderServiceImpl implements OrderService {
             if (newQuantity == 0){
                 product.setProductStatus(ProductStatus.OUT_OF_STOCK);
             }
+
             /* Update the order entity to corresponding item */
             item.setOrderEntity(orderEntity);
         }
@@ -150,14 +147,46 @@ public class OrderServiceImpl implements OrderService {
         return orderEntity;
     }
 
+    @Override
+    public List<Integer> top5OrdersWithHighestOrderValue() {
+        return orderRepository.top5OrdersWithHighestOrderValue();
+    }
+
+    @Override
+    public List<Integer> allOrderOfParticularCustomer(String emailId) {
+        Iterable<OrderEntity> orderEntityIterable = orderRepository.findAll();
+        List<Integer> list = new ArrayList<>();
+
+        /*Iterate whole order_info table*/
+        for (OrderEntity order: orderEntityIterable) {
+            if (order.getCustomer().getEmailId().equals(emailId)){
+                list.add(order.getId());
+            }
+        }
+        return list;
+    }
+
+    @Override
+    public List<Integer> top5RecentlyOrders() {
+        return orderRepository.top5RecentlyOrders();
+    }
+
     private String generateMaskedCardNo(Card card) {
         String originalCardNo = card.getCardNo();
         String cardNo = "";
         for (int i = 0; i < originalCardNo.length()-4; i++) {
             cardNo += "X";
         }
-
         cardNo += originalCardNo.substring(originalCardNo.length()-4);
         return cardNo;
+    }
+
+    public void sendMailToCustomer(String text, String emailId) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("ecommerce7232@gmail.com");
+        message.setTo(emailId);
+        message.setSubject("Order Booked!!!");
+        message.setText(text);
+        emailSender.send(message);
     }
 }
